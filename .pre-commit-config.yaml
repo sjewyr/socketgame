@@ -1,0 +1,27 @@
+repos:
+-   repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.4.0
+    hooks:
+    -   id: check-added-large-files
+    -   id: check-toml
+    -   id: check-yaml
+        args:
+        -   --unsafe
+    -   id: end-of-file-fixer
+    -   id: trailing-whitespace
+
+-   repo: local
+    hooks:
+    -   id: ruff-check
+        name: ruff-check
+        entry: poetry run ruff check
+        language: system
+        types: [ file, python ]
+        args:
+        - --fix
+
+    -   id: ruff-format
+        name: ruff-format
+        entry: poetry run ruff format
+        language: system
+        types: [ file, python ]
