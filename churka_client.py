@@ -27,14 +27,17 @@ class MyQAbility(qtw.QWidget):
         self.cooldown_label = qtw.QLabel(f"cd: {self.ability.base_cooldown}")
         self.label = qtw.QLabel(self.ability.name)
         self.descr = qtw.QLabel(self.ability.description)
+        self.energy_label = qtw.QLabel(str(self.ability.energy))
         layout = qtw.QHBoxLayout()
         self.setLayout(layout)
         layout.addWidget(qtw.QLabel(f"[{self.ability.key}]"))
         layout.addWidget(self.label)
         layout.addWidget(self.descr)
         layout.addWidget(self.cooldown_label)
+        layout.addWidget(self.energy_label)
         self.timer = QTimer()
         self.timer.setInterval(1000)
+
         self.timer.timeout.connect(self.reset)
 
     def reset(self):
@@ -78,8 +81,15 @@ class MainWindow(qtw.QWidget):
         self.pause = qtw.QLabel(
             "GAME IS NOT STARTED... WAITING FOR SECOND PLAYER TO CONNECT"
         )
+        self.energy_timer = QTimer()
+        self.energy_timer.setInterval(1000 // 25)
+        self.energy_timer.timeout.connect(self.energy_update)
+        self.energy_timer.start()
+        self.results_label = qtw.QLabel()
 
-        self.setFixedSize(500, 500)
+        self.energy_label = qtw.QLabel(f"Энергия чурки: {self.player.energy}")
+
+        self.setFixedSize(700, 500)
         layout = qtw.QVBoxLayout()
         self.setLayout(layout)
         for _, ability in self.abilities.items():
@@ -88,6 +98,13 @@ class MainWindow(qtw.QWidget):
         layout.addWidget(self.pause)
         layout.addWidget(self.label2)
         layout.addWidget(self.enemychurka)
+        layout.addWidget(self.energy_label)
+        layout.addWidget(self.results_label)
+
+    def energy_update(self):
+        if self.player.energy < 1000:
+            self.player.energy += 1
+            self.energy_label.setText(f"Энергия чурки: {self.player.energy}")
 
     @pyqtSlot(object)
     def update_text(self, data):
@@ -112,6 +129,14 @@ class MainWindow(qtw.QWidget):
             self.enemy_churka = int(data)
             self.enemychurka.setText(f"Гражданство второй чурки: {self.enemy_churka}")
 
+        if data == "win":
+            self.results_label.setText("Вы выиграли! УРАА УРАА ДАВАЙ УРА ДАВАЙ ДА")
+
+        if data == "lose":
+            self.results_label.setText(
+                "Вы проиграли! ААА НЕТ НЕТ АААА ЕПРСТ ААА БЛИН ВОТ НЕЗАДАЧА!"
+            )
+
     def keyPressEvent(self, event):
         if self.stall:
             return
@@ -123,8 +148,13 @@ class MainWindow(qtw.QWidget):
     async def write_key(self, key_text):
         if key_text in self.abilities:
             ability = self.abilities[key_text]
+            if ability.ability.energy > self.player.energy:
+                return
+
             if not ability.use():
                 return
+
+            self.player.energy -= ability.ability.energy
             self.sock.write((ability.ability.name + "\n").encode())
             self.sock.flush()
 
@@ -132,6 +162,7 @@ class MainWindow(qtw.QWidget):
 class Player:
     def __init__(self):
         self.churka = 1000
+        self.energy = 1000
 
 
 async def main():
@@ -148,4 +179,7 @@ async def main():
         print("Server not running. Please start churka_server.py")
 
 
-asyncio.run(main())
+try:
+    asyncio.run(main())
+except SystemExit:
+    print("Игра окончена всем спасибо все крутые")

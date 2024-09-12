@@ -1,12 +1,14 @@
 import asyncio
 import asyncio.streams
 import os
+import sys
 from enum import Enum
 
 import aioconsole
 import dotenv
 
 from abilities import ABILITIES
+from abilities import CalculationInput
 
 ABILITIES_DICT = {v.name: v for v in ABILITIES}
 
@@ -21,7 +23,9 @@ class Player:
         self.num: int = num
         self.reader: asyncio.StreamReader = reader
         self.writer: asyncio.StreamWriter = writer
+        self.blocking: float = 0.0
         self.churka = 1000
+        self.damage_boost = 0
 
 
 class State(Enum):
@@ -75,6 +79,7 @@ class Game:
             self.handle_player_input(self.player1, self.player2),
             self.handle_player_input(self.player2, self.player1),
             self.derji_v_kurse(),
+            self.mainloop(),
         )
 
     async def derji_v_kurse(self):
@@ -92,6 +97,20 @@ class Game:
             await self.player2.writer.drain()
             await asyncio.sleep(0.1)
 
+            if self.player1.churka <= 0:
+                self.player1.writer.write("win\n".encode())
+                self.player2.writer.write("lose\n".encode())
+                await self.player1.writer.drain()
+                await self.player2.writer.drain()
+                sys.exit()
+
+            if self.player2.churka <= 0:
+                self.player2.writer.write("win\n".encode())
+                self.player1.writer.write("lose\n".encode())
+                await self.player1.writer.drain()
+                await self.player2.writer.drain()
+                sys.exit()
+
     async def handle_player_input(self, player: Player, other: Player):
         while True:
             data = await player.reader.readline()
@@ -99,15 +118,33 @@ class Game:
                 print(f"Player {player.num}: {data.decode().strip()}")
                 data = data.decode().strip()
                 if data in ABILITIES_DICT:
-                    damage = ABILITIES_DICT[data].calculate(
-                        enemy=other.churka, player=player.churka
+                    results = ABILITIES_DICT[data].calculate(
+                        CalculationInput(
+                            other.churka, player.churka, player.damage_boost
+                        )
                     )
-                    other.churka -= int(damage)
+                    if results.enemy:
+                        if not other.blocking:
+                            other.churka -= int(results.enemy or 0)
+                        else:
+                            player.churka -= int(results.enemy or 0)
+                            other.blocking = 0
+                    player.churka += int(results.player or 0)
+                    player.blocking += int(results.block or 0)
+                    player.damage_boost += int(results.damage_boost or 0)
 
             if not data:
                 break
 
             await aioconsole.aprint("User input receiving")
+
+    async def mainloop(self):
+        while True:
+            for player in self.players:
+                if player.blocking:
+                    player.blocking = max(0, player.blocking - 0.1)
+
+            await asyncio.sleep(0.1)
 
 
 g = Game()
