@@ -104,15 +104,15 @@ class Game:
             await asyncio.sleep(0.1)
 
             if self.player1.churka <= 0:
-                self.player1.writer.write(encode(MESSAGE.WIN))
-                self.player2.writer.write(encode(MESSAGE.LOSE))
+                self.player1.writer.write(encode(MESSAGE.LOSE))
+                self.player2.writer.write(encode(MESSAGE.WIN))
                 await self.player1.writer.drain()
                 await self.player2.writer.drain()
                 sys.exit()
 
             if self.player2.churka <= 0:
-                self.player2.writer.write(encode(MESSAGE.WIN))
-                self.player1.writer.write(encode(MESSAGE.LOSE))
+                self.player2.writer.write(encode(MESSAGE.LOSE))
+                self.player1.writer.write(encode(MESSAGE.WIN))
                 await self.player1.writer.drain()
                 await self.player2.writer.drain()
                 sys.exit()
