@@ -13,6 +13,7 @@ from PyQt6.QtNetwork import QTcpSocket
 
 from abilities import ABILITIES
 from abilities import Ability
+from protocol import MESSAGE
 
 dotenv.load_dotenv(".env", override=True)
 
@@ -116,26 +117,30 @@ class MainWindow(qtw.QWidget):
         if data == "gay":
             self.player.churka -= 10
             self.label2.setText(f"Гражданство: {str(self.player.churka)}")
-        if data.startswith("take"):
-            data = data.split("take ")[1]
+        if data.startswith(MESSAGE.TAKE.value):
+            data = data.split(" ")[1]
 
             self.player.churka = int(data)
             self.label2.setText(f"Гражданство: {str(self.player.churka)}")
-        if data == "start":
+        if data == MESSAGE.START.value:
             self.stall = False
             self.pause.setText("")
-        if data.startswith("enemy"):
-            data = data.split("enemy ")[1]
+        if data.startswith(MESSAGE.ENEMY.value):
+            data = data.split(" ")[1]
             self.enemy_churka = int(data)
             self.enemychurka.setText(f"Гражданство второй чурки: {self.enemy_churka}")
 
-        if data == "win":
+        if data == MESSAGE.WIN.value:
             self.results_label.setText("Вы выиграли! УРАА УРАА ДАВАЙ УРА ДАВАЙ ДА")
 
-        if data == "lose":
+        if data == MESSAGE.LOSE.value:
             self.results_label.setText(
                 "Вы проиграли! ААА НЕТ НЕТ АААА ЕПРСТ ААА БЛИН ВОТ НЕЗАДАЧА!"
             )
+
+        if data == MESSAGE.KYS.value:
+            print("Im the third player in the game; Stopping the client")
+            self.close()
 
     def keyPressEvent(self, event):
         if self.stall:

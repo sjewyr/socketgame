@@ -1,5 +1,4 @@
 import asyncio
-import asyncio.streams
 import os
 import sys
 from enum import Enum
@@ -9,6 +8,8 @@ import dotenv
 
 from abilities import ABILITIES
 from abilities import CalculationInput
+from protocol import MESSAGE
+from protocol import encode
 
 ABILITIES_DICT = {v.name: v for v in ABILITIES}
 
@@ -46,22 +47,27 @@ class Game:
     async def connection_callback(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
     ):
-        if self.player1:
+        if self.state == State.WAITING_FOR_SECOND_PLAYER:
             self.player2 = Player(2, reader, writer)
             self.state = State.PLAYING
-            self.player1.writer.write("Starting\n".encode())
-            self.player2.writer.write("Starting\n".encode())
-            self.player2.writer.write("Starting".encode())
-            await self.player2.writer.drain()
-            self.player1.writer.write("Starting".encode())
-            await self.player1.writer.drain()
             self.players = [self.player1, self.player2]
 
-        else:
+        elif self.state == State.WAITING_FOR_FIRST_PLAYER:
             self.player1 = Player(1, reader, writer)
             self.state = State.WAITING_FOR_SECOND_PLAYER
             self.player1.writer.write("Waiting for second player...\n".encode())
             await self.player1.writer.drain()
+        else:
+            try:
+                writer.write(encode(MESSAGE.KYS))
+                await writer.drain()
+            except Exception:
+                pass
+            writer.close()
+            await writer.wait_closed()
+            await aioconsole.aprint(
+                "The third player is not supported; Do not try to connect with 3rd player"
+            )
 
     async def stop_until_ready(self):
         while self.state == State.WAITING_FOR_FIRST_PLAYER:
@@ -84,29 +90,29 @@ class Game:
 
     async def derji_v_kurse(self):
         while True:
-            self.player1.writer.write(f"take {self.player1.churka}\n".encode())
+            self.player1.writer.write(encode(MESSAGE.TAKE, self.player1.churka))
             await self.player1.writer.drain()
             await asyncio.sleep(0.25)
-            self.player1.writer.write(f"enemy {self.player2.churka}\n".encode())
+            self.player1.writer.write(encode(MESSAGE.ENEMY, self.player2.churka))
             await self.player1.writer.drain()
             await asyncio.sleep(0.1)
-            self.player2.writer.write(f"take {self.player2.churka}\n".encode())
+            self.player2.writer.write(encode(MESSAGE.TAKE, self.player2.churka))
             await self.player2.writer.drain()
             await asyncio.sleep(0.25)
-            self.player2.writer.write(f"enemy {self.player1.churka}\n".encode())
+            self.player2.writer.write(encode(MESSAGE.ENEMY, self.player1.churka))
             await self.player2.writer.drain()
             await asyncio.sleep(0.1)
 
             if self.player1.churka <= 0:
-                self.player1.writer.write("win\n".encode())
-                self.player2.writer.write("lose\n".encode())
+                self.player1.writer.write(encode(MESSAGE.WIN))
+                self.player2.writer.write(encode(MESSAGE.LOSE))
                 await self.player1.writer.drain()
                 await self.player2.writer.drain()
                 sys.exit()
 
             if self.player2.churka <= 0:
-                self.player2.writer.write("win\n".encode())
-                self.player1.writer.write("lose\n".encode())
+                self.player2.writer.write(encode(MESSAGE.WIN))
+                self.player1.writer.write(encode(MESSAGE.LOSE))
                 await self.player1.writer.drain()
                 await self.player2.writer.drain()
                 sys.exit()
@@ -152,9 +158,15 @@ g = Game()
 
 async def main():
     await asyncio.start_server(g.connection_callback, HOST, PORT)
-    await g.stop_until_ready()
     while True:
-        pass
+        try:
+            await g.stop_until_ready()
+
+        except (ConnectionResetError, BrokenPipeError):
+            print(
+                "One of clients has closed the connection; Maybe later i will add reconnection logic, exiting..."
+            )
+            sys.exit()
 
 
 asyncio.run(main())
