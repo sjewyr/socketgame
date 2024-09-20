@@ -113,34 +113,38 @@ class MainWindow(qtw.QWidget):
 
     @pyqtSlot()
     def readed(self):
-        data = self.sock.readAll().data().decode().strip()
-        if data == "gay":
-            self.player.churka -= 10
-            self.label2.setText(f"Гражданство: {str(self.player.churka)}")
-        if data.startswith(MESSAGE.TAKE.value):
-            data = data.split(" ")[1]
+        all_data = self.sock.readAll().data().decode().strip().split("\n")
+        while all_data:
+            data = all_data.pop(0)
+            if data == "gay":
+                self.player.churka -= 10
+                self.label2.setText(f"Гражданство: {str(self.player.churka)}")
+            if data.startswith(MESSAGE.TAKE.value):
+                data = data.split(" ")[1]
 
-            self.player.churka = int(data)
-            self.label2.setText(f"Гражданство: {str(self.player.churka)}")
-        if data == MESSAGE.START.value:
-            self.stall = False
-            self.pause.setText("")
-        if data.startswith(MESSAGE.ENEMY.value):
-            data = data.split(" ")[1]
-            self.enemy_churka = int(data)
-            self.enemychurka.setText(f"Гражданство второй чурки: {self.enemy_churka}")
+                self.player.churka = int(data)
+                self.label2.setText(f"Гражданство: {str(self.player.churka)}")
+            if data == MESSAGE.START.value:
+                self.stall = False
+                self.pause.setText("")
+            if data.startswith(MESSAGE.ENEMY.value):
+                data = data.split(" ")[1]
+                self.enemy_churka = int(data)
+                self.enemychurka.setText(
+                    f"Гражданство второй чурки: {self.enemy_churka}"
+                )
 
-        if data == MESSAGE.WIN.value:
-            self.results_label.setText("Вы выиграли! УРАА УРАА ДАВАЙ УРА ДАВАЙ ДА")
+            if data == MESSAGE.WIN.value:
+                self.results_label.setText("Вы выиграли! УРАА УРАА ДАВАЙ УРА ДАВАЙ ДА")
 
-        if data == MESSAGE.LOSE.value:
-            self.results_label.setText(
-                "Вы проиграли! ААА НЕТ НЕТ АААА ЕПРСТ ААА БЛИН ВОТ НЕЗАДАЧА!"
-            )
+            if data == MESSAGE.LOSE.value:
+                self.results_label.setText(
+                    "Вы проиграли! ААА НЕТ НЕТ АААА ЕПРСТ ААА БЛИН ВОТ НЕЗАДАЧА!"
+                )
 
-        if data == MESSAGE.KYS.value:
-            print("Im the third player in the game; Stopping the client")
-            self.close()
+            if data == MESSAGE.KYS.value:
+                print("Im the third player in the game; Stopping the client")
+                self.close()
 
     def keyPressEvent(self, event):
         if self.stall:

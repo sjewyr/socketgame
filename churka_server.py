@@ -92,16 +92,12 @@ class Game:
         while True:
             self.player1.writer.write(encode(MESSAGE.TAKE, self.player1.churka))
             await self.player1.writer.drain()
-            await asyncio.sleep(0.25)
             self.player1.writer.write(encode(MESSAGE.ENEMY, self.player2.churka))
             await self.player1.writer.drain()
-            await asyncio.sleep(0.1)
             self.player2.writer.write(encode(MESSAGE.TAKE, self.player2.churka))
             await self.player2.writer.drain()
-            await asyncio.sleep(0.25)
             self.player2.writer.write(encode(MESSAGE.ENEMY, self.player1.churka))
             await self.player2.writer.drain()
-            await asyncio.sleep(0.1)
 
             if self.player1.churka <= 0:
                 self.player1.writer.write(encode(MESSAGE.LOSE))
@@ -116,6 +112,7 @@ class Game:
                 await self.player1.writer.drain()
                 await self.player2.writer.drain()
                 sys.exit()
+            await asyncio.sleep(0.33)
 
     async def handle_player_input(self, player: Player, other: Player):
         while True:
