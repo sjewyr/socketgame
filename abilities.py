@@ -8,11 +8,13 @@ class CalculationResult:
         player: int = None,
         block: int = None,
         damage_boost: int = None,
+        shield: int = None,
     ):
         self.enemy = enemy
         self.player = player
         self.block = block
         self.damage_boost = damage_boost
+        self.shield = shield
 
 
 class CalculationInput:
@@ -58,11 +60,15 @@ def atomic_churka(args: CalculationInput) -> CalculationResult:
 
 
 def block(args: CalculationInput) -> CalculationResult:
-    return CalculationResult(block=4)
+    return CalculationResult(block=8)
 
 
 def push_ups(args: CalculationInput) -> CalculationResult:
     return CalculationResult(damage_boost=15)
+
+
+def shield(args: CalculationInput) -> CalculationResult:
+    return CalculationResult(shield=500)
 
 
 def steal_kosar(args: CalculationInput) -> CalculationResult:
@@ -87,7 +93,7 @@ ABILITIES = [
         "Мусорнуться",
         16,
         300,
-        "Отражает следующее действие в течении 4 секунд",
+        "Отражает следующее действие в течении 8 секунд",
         block,
     ),
     Ability("a", "Анжуманя", 5, 250, "+15 к наносимому урону навсегда", push_ups),
@@ -98,5 +104,13 @@ ABILITIES = [
         150,
         "Наносит че-то около 140 урона в среднем хз",
         steal_kosar,
+    ),
+    Ability(
+        "z",
+        "Нацепить модные цацки",
+        15,
+        250,
+        "Дает временный щит на 500(-10/с) хп",
+        shield,
     ),
 ]

@@ -27,6 +27,7 @@ class Player:
         self.blocking: float = 0.0
         self.churka = 1000
         self.damage_boost = 0
+        self.shield = 0
 
 
 class State(Enum):
@@ -42,7 +43,7 @@ class Game:
         self.state = State.WAITING_FOR_FIRST_PLAYER
         self.player1 = None
         self.player2 = None
-        self.players = []
+        self.players: list[Player] = []
 
     async def connection_callback(
         self, reader: asyncio.StreamReader, writer: asyncio.StreamWriter
@@ -128,13 +129,18 @@ class Game:
                     )
                     if results.enemy:
                         if not other.blocking:
-                            other.churka -= int(results.enemy or 0)
+                            other.churka -= max(
+                                int(results.enemy or 0) - int(other.shield or 0), 0
+                            )
+                            other.shield -= int(results.enemy or 0)
+
                         else:
                             player.churka -= int(results.enemy or 0)
                             other.blocking = 0
                     player.churka += int(results.player or 0)
                     player.blocking += int(results.block or 0)
                     player.damage_boost += int(results.damage_boost or 0)
+                    player.shield += int(results.shield or 0)
 
             if not data:
                 break
@@ -146,6 +152,7 @@ class Game:
             for player in self.players:
                 if player.blocking:
                     player.blocking = max(0, player.blocking - 0.1)
+                    player.shield = max(0, player.shield - 1)
 
             await asyncio.sleep(0.1)
 
