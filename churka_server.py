@@ -132,7 +132,10 @@ class Game:
                             other.churka -= max(
                                 int(results.enemy or 0) - int(other.shield or 0), 0
                             )
-                            other.shield -= int(results.enemy or 0)
+                            other.shield = max(
+                                0, other.shield - int(results.enemy or 0)
+                            )
+                            print(other.churka, other.shield)
 
                         else:
                             player.churka -= int(results.enemy or 0)
@@ -150,9 +153,8 @@ class Game:
     async def mainloop(self):
         while True:
             for player in self.players:
-                if player.blocking:
-                    player.blocking = max(0, player.blocking - 0.1)
-                    player.shield = max(0, player.shield - 1)
+                player.blocking = max(0, player.blocking - 0.1)
+                player.shield = max(0, player.shield - 1)
 
             await asyncio.sleep(0.1)
 
