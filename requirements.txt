@@ -1,2 +1,4 @@
 aioconsole
 pyqt6
+qasync
+python-dotenv
